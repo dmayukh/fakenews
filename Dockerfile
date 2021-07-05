@@ -1,19 +1,29 @@
-FROM continuumio/miniconda3
+FROM ubuntu:18.04
+# 
+RUN set -x
+# 
+# # Don't download stuff to the git repo, that's messy.
+# 
+# Update packages
+RUN apt-get -y update
+RUN apt-get -y upgrade
+RUN apt-get -y install bzip2
 
-ENTRYPOINT ["/bin/bash", "-c"]
+RUN apt-get install -y wget
 
-RUN mkdir /fever/
-VOLUME /fever/
-ADD requirements.txt /fever/
-ADD setup.py /fever/
-ADD src /fever/
-ADD config /fever/
+ARG ANACONDA_INSTALLER="Anaconda3-2020.11-Linux-x86_64.sh"
+RUN wget "https://repo.continuum.io/archive/$ANACONDA_INSTALLER"
+RUN chmod +x $ANACONDA_INSTALLER
+RUN ./$ANACONDA_INSTALLER -b
 
-RUN apt-get update
-RUN conda update -q conda
-RUN conda info -a
-RUN conda create -q -n fever python=3.6
-RUN source activate fever
-RUN pip install -r requirements.txt
-RUN python setup.py install
+RUN /bin/bash -c "source ${HOME}/.bashrc"
 
+RUN ${HOME}/anaconda3/bin/pip install --upgrade pip
+RUN ${HOME}/anaconda3/bin/pip install --upgrade tensorflow==2.4.1
+RUN ${HOME}/anaconda3/bin/jupyter notebook --generate-config
+
+RUN apt-get install -y python3-pip
+RUN pip3 install -U pip
+RUN /bin/bash -c "echo export PATH=~/anaconda3/bin:$PATH >> ${HOME}/.bashrc"
+RUN apt-get install -y vim
+RUN ${HOME}/anaconda3/bin/pip install transformers
