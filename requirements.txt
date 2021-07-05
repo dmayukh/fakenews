@@ -1,0 +1,5 @@
+numpy>=1.15
+regex
+allennlp
+fever-scorer
+fever-drqa
