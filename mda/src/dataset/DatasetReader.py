@@ -223,7 +223,7 @@ class DatasetReader:
             body_ids = [e[0] for e in data["evidence"]]
             bodies = [self.database.get_doc_text(id) for id in set(body_ids)]
             parts = [claim, " ".join(bodies)]
-            yield " ".join(parts)
+            yield claim, " ".join(parts)
 
     def get_test_data_generator(self):
         for d in self.data:
@@ -235,7 +235,7 @@ class DatasetReader:
         generator = lambda: self.get_train_data_generator()
         return tf.data.Dataset.from_generator(
             generator, output_signature=(
-                tf.TensorSpec(shape=(), dtype=tf.string)))
+                tf.TensorSpec(shape=(2,), dtype=tf.string)))
 
     def get_test_dataset(self):
         generator = lambda: self.get_test_data_generator()
