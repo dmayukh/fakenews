@@ -72,7 +72,7 @@ class DatasetGenerator:
         self.dataset_root = dataset_root
         self.out_dir = out_dir
         if init_ranker:
-            self.tdidf_npz_file = self.dataset_root + 'data/index/fever-tfidf-ngram=2-hash=16777216-tokenizer=simple.npz'
+            self.tdidf_npz_file = self.dataset_root + '/index/fever-tfidf-ngram=2-hash=16777216-tokenizer=simple.npz'
             self.ranker = retriever.get_class('tfidf')(tfidf_path=self.tdidf_npz_file)
         else:
             self.ranker = None
