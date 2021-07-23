@@ -85,7 +85,7 @@ class DatasetGenerator:
             print("Creating directory {}".format(self.out_dir))
             os.makedirs(self.out_dir)
         print("Writing data to {}".format("{0}/{1}.ns.pages.p{2}.jsonl".format(self.out_dir, split, k)))
-        with open(self.dataset_root + "data/fever-data/{0}.jsonl".format(split), "r") as f_in:
+        with open(self.dataset_root + "/fever-data/{0}.jsonl".format(split), "r") as f_in:
             with open(self.out_dir + "{0}.ns.pages.p{1}.jsonl".format(split, k), "w+") as f_out:
                 for line in tqdm(f_in.readlines()):
                     line = json.loads(line)
