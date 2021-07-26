@@ -87,7 +87,7 @@ class esim:
         # Decoder = Bidirectional(CuDNNLSTM(units=100, return_sequences=True, kernel_initializer='RandomNormal'),
         #                         name='finaldecoder')  # [-1,2*units]
 
-        Decoder = tf.keras.layers.Bidirectional(tf.keras.layers.RNN(tf.keras.layers.LSTMCell(dim), return_sequences=True),
+        Decoder = tf.keras.layers.Bidirectional(tf.keras.layers.RNN(tf.keras.layers.LSTMCell(self.lstm_units), return_sequences=True),
                                                 name='finaldecoder')
 
         PremAlign = Dropout(0.5)(PremAlign)
