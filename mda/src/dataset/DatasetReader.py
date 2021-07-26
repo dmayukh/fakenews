@@ -7,6 +7,7 @@ import tensorflow as tf
 import pickle
 from sklearn import preprocessing
 from drqa.retriever import DocDB, utils
+from mda.src.dataset.DatasetGenerator import SimpleRandom
 
 class LabelSchema:
 
@@ -166,7 +167,7 @@ class DatasetReader:
 
     #split = 'paper_dev', working_dir = 'working/data/', k = 5
     #working_dir + "training/{0}_pipeline.ps.pages.p{1}.jsonl".format(split, k)
-    def __init__(self, in_file, label_checkpoint_file, database_path, type='train'):
+    def __init__(self, in_file, label_checkpoint_file, database_path, type='train', fullbodytext=False):
         self.lineformatter = None
         self.type = type
         if self.type == 'train':
@@ -182,6 +183,8 @@ class DatasetReader:
         self.database_path = database_path
         self.database = FeverDocDB(self.database_path)
         self.labelencoder = None
+        # do we need the texts from the body of the documents or just the evidence sentences?
+        self.fullbodytext = fullbodytext
 
     def read(self):
         raw = self.reader.read(self.in_file)
@@ -209,6 +212,22 @@ class DatasetReader:
         lbls_ds = tf.data.Dataset.from_tensor_slices(lbls)
         return lbls_ds
 
+    def get_doc_line(self, doc, line):
+        lines = self.database.get_doc_lines(doc)
+        ### if this is from annotated evidences
+        if line > -1:
+            return lines.split("\n")[line].split("\t")[
+                1]  # get all the lines from the document and match with the line ids that were annotated as evidence by the human annotators
+        elif line <= -2:
+            # TODO: nearest 5 sentences from the document
+            non_empty_lines = [line.split("\t")[1] for line in lines.split("\n") if
+                               len(line.split("\t")) > 1 and len(line.split("\t")[1].strip())]
+            return non_empty_lines[SimpleRandom.get_instance().next_rand(0, len(non_empty_lines) - 1)]
+        else:  ### if this is from not enough info evidences, NearestP method, to sample "a" single sentence randomly from the nearest page match
+            non_empty_lines = [line.split("\t")[1] for line in lines.split("\n") if
+                               len(line.split("\t")) > 1 and len(line.split("\t")[1].strip())]
+            return non_empty_lines[SimpleRandom.get_instance().next_rand(0, len(non_empty_lines) - 1)]
+
     def get_dataset(self):
         if self.type == 'train':
             ds = self.get_train_dataset()
@@ -216,14 +235,23 @@ class DatasetReader:
             ds = self.get_test_dataset()
         labels = self.read_labels()
         return tf.data.Dataset.zip((ds, labels))
-
-    def get_train_data_generator(self):
+    """
+        Use this for the generation of the tokens for our bert tokenizer
+        Do not use this for the generation of the training and the dev dataset
+    """
+    def get_train_data_generator_bodytext(self):
         for data in self.data:
             claim = preprocess(data["claim"])
             body_ids = [e[0] for e in data["evidence"]]
             bodies = [self.database.get_doc_text(id) for id in set(body_ids)]
             parts = [claim, " ".join(bodies)]
             yield claim, " ".join(parts)
+
+    def get_train_data_generator_sentencetext(self):
+        for data in self.data:
+            claim = preprocess(data["claim"])
+            lines = [self.get_doc_line(d[0], d[1]) for d in data["evidence"]]
+            yield claim, " ".join(lines)
 
     def get_test_data_generator(self):
         for d in self.data:
@@ -232,10 +260,13 @@ class DatasetReader:
             yield claim, " ".join(lines)
 
     def get_train_dataset(self):
-        generator = lambda: self.get_train_data_generator()
+        if self.fullbodytext:
+            generator = lambda: self.get_train_data_generator_bodytext()
+        else:
+            generator = lambda: self.get_train_data_generator_sentencetext()
         return tf.data.Dataset.from_generator(
             generator, output_signature=(
-                tf.TensorSpec(shape=(2,), dtype=tf.string)))
+                tf.TensorSpec(shape=(2, ), dtype=tf.string)))
 
     def get_test_dataset(self):
         generator = lambda: self.get_test_data_generator()
