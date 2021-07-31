@@ -78,7 +78,7 @@ class esim:
                                                            kernel_regularizer=l2(0.0),
                                                            bias_regularizer=l2(0.0),
                                                            activation='relu'),
-                                                     name='Compresser')
+                                                           name='Compresser')
 
         PremAlign = Compresser(PremAlign)
         HypoAlign = Compresser(HypoAlign)
